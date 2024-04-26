@@ -76,3 +76,79 @@ rna4 <- rna %>% mutate(expression = log(expression)) %>%
          expression > 5) %>% 
   select(gene, chromosome_name, phenotype_description, sample, expression)
 rna4
+
+rna5 <- rna %>% filter(gene == "Dok3") %>% 
+  group_by(time) %>% 
+  summarise(mean_expression = mean(expression))
+rna5
+
+rna %>% count(sample)
+rna
+
+rna %>% group_by(sample) %>% summarise(n = sum(expression)) %>% arrange(desc(n))
+
+rna %>% filter(sample == "GSM2545336") %>% count(gene_biotype) %>% arrange(desc(n))
+
+rna %>% filter(phenotype_description == "abnormal DNA methylation") %>% 
+  mutate(expression = log(expression)) %>% 
+  group_by(gene, time) %>% summarise(mean = mean(expression)) %>% 
+  arrange(gene, time)
+
+(rna_wider <- rna %>% select(gene, mouse, expression) %>% 
+  pivot_wider(names_from = mouse, values_from = expression))
+
+(rna_longer <- rna_wider %>% 
+    pivot_longer(names_to = "mouse", values_to = "expression", -gene))
+
+(q2 <- rna %>% filter(chromosome_name %in% c("X", "Y")) %>% 
+    select(sex, chromosome_name, expression) %>% 
+    group_by(sex, chromosome_name) %>% 
+    summarise(mean_expression = mean(expression)) %>% 
+    pivot_wider(names_from = sex, values_from = mean_expression))
+
+(q3 <- rna %>% select(gene, expression, time) %>% 
+    group_by(gene, time) %>% 
+    summarise(mean_expression = mean(expression)) %>% 
+    pivot_wider(names_from = time, values_from = mean_expression))
+
+(q4 <- q3 %>% mutate(fold_0to8 = `8`/`0`, fold_8to4 = `8`/`4`) %>% 
+    pivot_longer(names_to = "comparison", values_to = "foldChanges", fold_0to8:fold_8to4))
+
+(q4a <- q4 %>% select(gene, comparison, foldChanges))
+q4a %>% pull(foldChanges)
+
+library(datasauRus)
+install.packages("datasauRus")
+if(requireNamespace("ggplot2")){
+  library(ggplot2)
+  ggplot(datasaurus_dozen, aes(x = x, y = y, colour = dataset))+
+    geom_point()+
+    theme_void()+
+    theme(legend.position = "none")+
+    facet_wrap(~dataset, ncol = 3)
+}
+
+download.file(url = "https://carpentries-incubator.github.io/bioc-intro/data/annot1.csv",
+              destfile = "data/annot1.csv")
+annot1 <- read_csv(file = "data/annot1.csv")
+annot1
+
+rna_mini <- rna %>%
+  select(gene, sample, expression) %>%
+  head(10)
+rna_mini
+
+full_join(rna_mini, annot1)
+
+download.file(url = "https://carpentries-incubator.github.io/bioc-intro/data/annot2.csv",
+              destfile = "data/annot2.csv")
+annot2 <- read_csv(file = "data/annot2.csv")
+annot2
+
+download.file(url = "https://carpentries-incubator.github.io/bioc-intro/data/annot3.csv",
+              destfile = "data/annot3.csv")
+annot3 <- read_csv(file = "data/annot3.csv")
+annot3
+
+full_join(rna_mini, annot3)
+write_csv(q3, file = "data_output/rna_wide.csv")
